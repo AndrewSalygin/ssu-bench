@@ -1,0 +1,694 @@
+openapi: 3.1.0
+info:
+  title: SsuBench API
+  version: "1.0.0"
+  description: Спецификация REST API для реализованных на текущий момент эндпоинтов SsuBench.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Auth
+  - name: Users
+  - name: Tasks
+  - name: Bids
+  - name: Payments
+
+security:
+  - bearerAuth: [ ]
+
+paths:
+  /auth/register:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Регистрация нового пользователя
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+        - in: query
+          name: password
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: role
+          required: true
+          schema:
+            $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: JWT токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/login:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Вход по email и паролю
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+        - in: query
+          name: password
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: JWT токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Получение списка пользователей с пагинацией
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Users]
+      summary: Создание пользователя
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+        - in: query
+          name: password
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: role
+          required: true
+          schema:
+            $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: Созданный пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Получение пользователя по идентификатору
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Users]
+      summary: Обновление пользователя
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+        - in: query
+          name: password
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: role
+          required: true
+          schema:
+            $ref: '#/components/schemas/Role'
+        - in: query
+          name: balance
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: Обновлённый пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [Users]
+      summary: Удаление пользователя
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Удалено
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/{id}/block:
+    post:
+      tags: [ Users ]
+      summary: Блокировка пользователя администратором
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Пользователь заблокирован
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/{id}/unblock:
+    post:
+      tags: [ Users ]
+      summary: Разблокировка пользователя администратором
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Пользователь разблокирован
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /tasks:
+    get:
+      tags: [Tasks]
+      summary: Получение списка задач с пагинацией
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Список задач
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Tasks]
+      summary: Создание задачи
+      parameters:
+        - in: query
+          name: title
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: description
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: reward
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Созданная задача
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Получение задачи по идентификатору
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Задача
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Tasks]
+      summary: Обновление задачи
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - in: query
+          name: title
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: description
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - in: query
+          name: reward
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: status
+          required: true
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+      responses:
+        '200':
+          description: Обновлённая задача
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /tasks/{id}/publish:
+    post:
+      tags: [Tasks]
+      summary: Публикация задачи
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Опубликованная задача
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /tasks/{id}/cancel:
+    post:
+      tags: [Tasks]
+      summary: Отмена задачи
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Отменено
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /bids:
+    post:
+      tags: [Bids]
+      summary: Создание заявки
+      parameters:
+        - in: query
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Созданная заявка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /bids/task/{taskId}:
+    get:
+      tags: [Bids]
+      summary: Получение списка заявок по задаче с пагинацией
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Список заявок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /bids/{bidId}/select:
+    post:
+      tags: [Bids]
+      summary: Выбор заявки для задачи
+      parameters:
+        - in: path
+          name: bidId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Выбрано
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /bids/task/{taskId}/complete:
+    post:
+      tags: [Bids]
+      summary: Отметка выполнения задачи исполнителем
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Выполнено
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /payments/confirm:
+    post:
+      tags: [Payments]
+      summary: Подтверждение выполнения задачи и проведение оплаты
+      parameters:
+        - in: query
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Платёж подтверждён
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Role:
+      type: string
+      enum: [CUSTOMER, EXECUTOR, ADMIN]
+
+    TaskStatus:
+      type: string
+      enum: [CREATED, PUBLISHED, IN_PROGRESS, DONE, CONFIRMED, CANCELLED]
+
+    BidStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, REJECTED]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        balance:
+          type: integer
+        blocked:
+          type: boolean
+      required: [id, email, password, role, balance, blocked]
+
+    Task:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        reward:
+          type: integer
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        executorId:
+          type: string
+          format: uuid
+      required: [title, description, reward, status]
+
+    Bid:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/BidStatus'
+      required: [id, taskId, status]
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromUser:
+          type: integer
+          format: int64
+        toUser:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, fromUser, toUser, amount, createdAt]
+
+    FieldViolation:
+      type: object
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+      required: [field, message]
+
+    ApiErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        requestId:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldViolation'
+      required: [timestamp, status, error, code, message, path, requestId]
+
+    AuthUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+          enum: [ CUSTOMER, EXECUTOR, ADMIN ]
+        balance:
+          type: integer
+          format: int32
+        blocked:
+          type: boolean
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/AuthUserResponse'
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'

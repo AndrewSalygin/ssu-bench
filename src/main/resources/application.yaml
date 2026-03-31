@@ -1,0 +1,39 @@
+db:
+  ssu-bench:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+server:
+  port: 8080
+  shutdown: graceful
+  tomcat:
+    connection-timeout: ${HTTP_TIMEOUT_CONNECTION:5s}
+    keep-alive-timeout: ${HTTP_TIMEOUT_KEEP_ALIVE:15s}
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: ${HTTP_SHUTDOWN_TIMEOUT:30s}
+
+resilience4j:
+  timelimiter:
+    instances:
+      http-controller:
+        timeoutDuration: ${HTTP_TIMEOUT_REQUEST:5s}
+        cancelRunningFuture: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    url: /openapi.yaml
+    operationsSorter: method
+    tagsSorter: alpha
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:ssubench-dev-secret-change-me}
+    issuer: ssu-bench
+    expiration: 24h
